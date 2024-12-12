@@ -1,0 +1,127 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+permissions:
+  contents: write
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.url || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      AUTHOR_EMAIL: 'github-actions[bot]@users.noreply.github.com'
+      AUTHOR_NAME: 'github-actions[bot]'
+    outputs:
+      scriptsToUpload: ${{ steps.scriptsArray.outputs.array }}
+      isUploadNeeded: ${{ steps.diffChecker.outputs.pass }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 'lts/*'
+          check-latest: true
+
+      - name: Install dependencies
+        run: yarn install --production=false
+
+      - name: Build project
+        run: yarn build-all
+
+      - name: check changed scripts
+        id: diffChecker
+        run: |
+          mkdir -p ./currVersion
+          find ./dist -iname "entry-*.js" -execdir bash -c "git diff --exit-code --quiet --no-index  '{}' '../currVersion/{}' || basename -s .js \"{}\"" \; > o.txt
+          cat o.txt
+          [ ! -s o.txt ] && echo "no changes found" || echo "pass=true" >> "$GITHUB_OUTPUT"
+          cp ./dist/entry-*.js ./currVersion/
+          
+
+      - name: commit and push new scripts
+        if: ${{ steps.diffChecker.outputs.pass || false }}
+        run: |
+          git config --local user.email "${AUTHOR_EMAIL}"
+          git config --local user.name "${AUTHOR_NAME}"
+          git add ./currVersion && git commit -m "fresh scripts [skip ci]" && git push
+
+      - name: prepare data for matrix
+        if: ${{ steps.diffChecker.outputs.pass || false }}
+        id: scriptsArray
+        run: |
+          while read scriptName; do echo -n "\"$scriptName\", " >> l.txt; done < o.txt
+          echo "array=[$(cat l.txt | rev | cut -c3- | rev)]" >> "$GITHUB_OUTPUT"
+          cat "$GITHUB_OUTPUT"
+  
+  upload-and-clear-cache:
+    if: ${{ needs.build.outputs.isUploadNeeded != false }}
+    needs: [build]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scriptName: ${{ fromJson(needs.build.outputs.scriptsToUpload) }}
+    env:
+      BUCKET_NAME: ${{ github.ref == 'refs/heads/main' && 'bucket-prod' || 'bucket-staging' }}
+      NODE_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      EXAMPLE_URL_ENTRY_1: ${{ github.ref == 'refs/heads/main' && 'https://some.url-1.to.prod' || 'https://some.url-1.to.staging' }}
+      EXAMPLE_URL_ENTRY_2: ${{ github.ref == 'refs/heads/main' && 'https://some.url-2.to.prod' || 'https://some.url-2.to.staging' }}
+    name: processing ${{ matrix.scriptName || 'test' }}
+    steps:
+      - name: prepare variables
+        id: dynamicVariables
+        run: |
+          echo "EXAMPLE_URL_WITH_SUFFIX=EXAMPLE_URL_${{ matrix.scriptName }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
+          echo "EXAMPLE_URL_FROM_VARS=EXAMPLE_URL_${{ matrix.scriptName }}_${{ github.ref_name }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
+          echo "FASTLY_SERVICE_ID_WITH_SUFFIX=FASTLY_SERVICE_ID_${{ matrix.scriptName }}_${{ github.ref_name }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
+
+      - name: check variables # this step just for test
+        run: |
+          echo "${{ matrix.scriptName }}"
+          echo '${{ steps.dynamicVariables.outputs.EXAMPLE_URL_WITH_SUFFIX }}'
+          echo '${{ steps.dynamicVariables.outputs.FASTLY_SERVICE_ID_WITH_SUFFIX }}'
+          echo '${{ env[format('{0}', steps.dynamicVariables.outputs.EXAMPLE_URL_WITH_SUFFIX)] }}'
+          echo '${{ steps.dynamicVariables.outputs.EXAMPLE_URL_FROM_VARS }}'
+          echo '${{ vars[format('{0}', steps.dynamicVariables.outputs.EXAMPLE_URL_FROM_VARS)] }}'
+
+      - name: skip step if variable doesn't exist
+        if: ${{ vars[format('{0}', steps.dynamicVariables.outputs.EXAMPLE_URL_FROM_VARS)] || false }}
+        run: |
+          echo "hi"
+
+      # ---- commented cause it's just example of workflow, but code should work if uncoment it
+      # - name: Authenticate to Google Cloud
+      #   uses: google-github-actions/auth@v1
+      #   with:
+      #     credentials_json: ${{ secrets.GC_KEY }}
+
+      # - name: Upload script to the bucket
+      #   run: |
+      #     gcloud storage cp currVersion/${{ matrix.scriptName }} gs://${{ env.BUCKET_NAME }}/some_dir/${{ matrix.scriptName }}
+
+      # - name: Purge Cache on Fastly
+      #   if: success()
+      #   run: |
+      #     curl -X POST "https://api.fastly.com/service/${{ secrets[format('{0}', steps.dynamicVariables.outputs.FASTLY_SERVICE_ID_WITH_SUFFIX)] }}/purge/purge_all" \
+      #     -H "Fastly-Key: ${{ env.FASTLY_API_KEY }}" \
+      #     -H "Accept: application/json"
+
+      # - name: Notify
+      #   if: always()
+      #   uses: slack-notification-action@main
+      #   with:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+      #     SLACK_FAILURE_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+      #     TITLE_SUCCESS: ""
+      #     TITLE_FAIL: ""
+      #     BODY_SUCCESS: "Deployment completed [${{ env.NODE_ENV }}]. You can check ${{ env[format('{0}', steps.dynamicVariables.outputs.EXAMPLE_URL_WITH_SUFFIX)] }}"
+      #     BODY_FAIL: "Deployment failed. Check <https://github.com/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ github.repository }}>"
+
