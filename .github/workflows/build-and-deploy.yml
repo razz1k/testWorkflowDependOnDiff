@@ -44,7 +44,6 @@ jobs:
           find ./dist -iname "entry-*.js" -execdir bash -c "git diff --exit-code --quiet --no-index  '{}' '../currVersion/{}' || basename -s .js \"{}\"" \; > o.txt
           cat o.txt
           [ ! -s o.txt ] && echo "no changes found" || echo "pass=true" >> "$GITHUB_OUTPUT"
-          cp ./dist/entry-*.js ./currVersion/
           
 
       - name: commit and push new scripts
@@ -53,6 +52,7 @@ jobs:
         run: |
           git config --local user.email "${AUTHOR_EMAIL}"
           git config --local user.name "${AUTHOR_NAME}"
+          cp ./dist/entry-*.js ./currVersion/
           git add ./currVersion && git commit -m "fresh scripts [skip ci]"
           git push && echo "pass=true" >> "$GITHUB_OUTPUT" || echo "pass=false" >> "$GITHUB_OUTPUT"
 
@@ -62,7 +62,6 @@ jobs:
         run: |
           while read scriptName; do echo -n "\"$scriptName\", " >> l.txt; done < o.txt
           echo "array=[$(cat l.txt | rev | cut -c3- | rev)]" >> "$GITHUB_OUTPUT"
-          cat "$GITHUB_OUTPUT"
 
   upload-and-clear-cache:
     if: ${{ needs.build.outputs.isUploadNeeded != false }}
@@ -85,7 +84,7 @@ jobs:
           echo "if ${{ toJson(needs.build.outputs.isUploadNeeded) != toJson(false) }}"
           echo "isUploadNeeded ${{ needs.build.outputs.isUploadNeeded }}"
           echo "isUploadNeeded2 ${{ needs.build.outputs.isUploadNeeded || false }}"
-          echo "${{ toJson(needs.build.outputs.isUploadNeeded) }}"
+          echo "${{ startWith(toJson(needs.build.outputs.isUploadNeeded), 'false') }}"
           echo "EXAMPLE_URL_WITH_SUFFIX=EXAMPLE_URL_${{ matrix.scriptName }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
           echo "EXAMPLE_URL_FROM_VARS=EXAMPLE_URL_${{ matrix.scriptName }}_${{ github.ref_name }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
           echo "FASTLY_SERVICE_ID_WITH_SUFFIX=FASTLY_SERVICE_ID_${{ matrix.scriptName }}_${{ github.ref_name }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
