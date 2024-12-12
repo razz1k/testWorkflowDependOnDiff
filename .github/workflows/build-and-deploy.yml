@@ -76,7 +76,7 @@ jobs:
       NODE_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
       EXAMPLE_URL_ENTRY_1: ${{ github.ref == 'refs/heads/main' && 'https://some.url-1.to.prod' || 'https://some.url-1.to.staging' }}
       EXAMPLE_URL_ENTRY_2: ${{ github.ref == 'refs/heads/main' && 'https://some.url-2.to.prod' || 'https://some.url-2.to.staging' }}
-    name: processing ${{ matrix.scriptName || 'skipped' }}
+    name: processing ${{ matrix.scriptName }}
     steps:
       - name: prepare variables
         id: dynamicVariables
