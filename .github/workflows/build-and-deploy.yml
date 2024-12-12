@@ -65,7 +65,7 @@ jobs:
           cat "$GITHUB_OUTPUT"
   
   upload-and-clear-cache:
-    if: ${{ fromJson(needs.build.outputs.scriptsToUpload) }}
+    if: ${{ needs.build.outputs.isUploadNeeded != false }}
     needs: [build]
     runs-on: ubuntu-latest
     strategy:
