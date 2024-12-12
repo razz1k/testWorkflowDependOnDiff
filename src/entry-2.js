@@ -1,3 +1,3 @@
 import Shared from './shared';
 console.log("hi from entry-2", Shared);
-console.log("new changes3");
+console.log("new changes5");
