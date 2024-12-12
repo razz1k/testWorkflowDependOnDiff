@@ -57,13 +57,15 @@ jobs:
           git push && echo "pass=true" >> "$GITHUB_OUTPUT" || echo "pass=false" >> "$GITHUB_OUTPUT"
 
       - name: prepare data for matrix
-        if: ${{ steps.scriptsUpdate.outputs.pass || false }}
         id: scriptsArray
         run: |
           while read scriptName; do echo -n "\"$scriptName\", " >> l.txt; done < o.txt
           echo "array=[$(cat l.txt | rev | cut -c3- | rev)]" >> "$GITHUB_OUTPUT"
           cat "$GITHUB_OUTPUT"
-  
+          echo '${{ steps.scriptsUpdate.outputs.pass || false }}'
+          echo '${{ steps.scriptsUpdate.outputs.pass }}'
+          echo '${{ steps.scriptsUpdate.outputs.pass != false }}'
+
   upload-and-clear-cache:
     if: ${{ needs.build.outputs.isUploadNeeded != false }}
     needs: [build]
