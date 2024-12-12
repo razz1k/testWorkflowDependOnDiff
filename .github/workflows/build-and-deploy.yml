@@ -65,13 +65,13 @@ jobs:
           cat "$GITHUB_OUTPUT"
   
   upload-and-clear-cache:
-    if: ${{ needs.build.outputs.isUploadNeeded != false }}
+    if: ${{ fromJson(needs.build.outputs.scriptsToUpload) }}
     needs: [build]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        scriptName: ${{ needs.build.outputs.scriptsToUpload || 'test' }}
+        scriptName: ${{ fromJson(needs.build.outputs.scriptsToUpload) }}
     env:
       BUCKET_NAME: ${{ github.ref == 'refs/heads/main' && 'bucket-prod' || 'bucket-staging' }}
       NODE_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
