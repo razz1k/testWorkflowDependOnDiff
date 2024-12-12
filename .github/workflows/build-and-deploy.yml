@@ -82,10 +82,10 @@ jobs:
       - name: prepare variables
         id: dynamicVariables
         run: |
-          echo "if ${{ toJson(needs.build.outputs.isUploadNeeded) != toJson(false) }}"
+          echo "if ${{ toJson(needs.build.outputs.isUploadNeeded) !== toJson(false) }}"
           echo "isUploadNeeded ${{ needs.build.outputs.isUploadNeeded }}"
           echo "isUploadNeeded2 ${{ needs.build.outputs.isUploadNeeded || false }}"
-          echo "${{ toJson(needs) }}"
+          echo "${{ toJson(needs.build.outputs.isUploadNeeded) }}"
           echo "EXAMPLE_URL_WITH_SUFFIX=EXAMPLE_URL_${{ matrix.scriptName }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
           echo "EXAMPLE_URL_FROM_VARS=EXAMPLE_URL_${{ matrix.scriptName }}_${{ github.ref_name }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
           echo "FASTLY_SERVICE_ID_WITH_SUFFIX=FASTLY_SERVICE_ID_${{ matrix.scriptName }}_${{ github.ref_name }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
