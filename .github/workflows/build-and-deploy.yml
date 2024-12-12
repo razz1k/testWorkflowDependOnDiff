@@ -53,7 +53,7 @@ jobs:
           git config --local user.email "${AUTHOR_EMAIL}"
           git config --local user.name "${AUTHOR_NAME}"
           git add ./currVersion && git commit -m "fresh scripts [skip ci]"
-          git push || echo "pass=true" >> "$GITHUB_OUTPUT"
+          git push && echo "pass=true" >> "$GITHUB_OUTPUT"
 
       - name: prepare data for matrix
         if: ${{ steps.diffChecker.outputs.pass || false }}
