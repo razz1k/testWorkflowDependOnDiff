@@ -2,7 +2,7 @@ name: Build and Deploy
 
 on:
   push:
-    branches: [ main, staging, CI ]
+    branches: [ main, staging ]
 permissions:
   contents: write
 concurrency:
