@@ -64,7 +64,7 @@ jobs:
           echo "array=[$(cat l.txt | rev | cut -c3- | rev)]" >> "$GITHUB_OUTPUT"
 
   upload-and-clear-cache:
-    if: echo "${{ contains(toJson(needs.build.outputs.isUploadNeeded), 'true') }}"
+    if: ${{ contains(toJson(needs.build.outputs.isUploadNeeded), 'true') }}
     needs: [build]
     runs-on: ubuntu-latest
     strategy:
