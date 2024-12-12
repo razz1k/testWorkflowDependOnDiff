@@ -57,23 +57,21 @@ jobs:
           git push && echo "pass=true" >> "$GITHUB_OUTPUT" || echo "pass=false" >> "$GITHUB_OUTPUT"
 
       - name: prepare data for matrix
+        if: ${{ steps.scriptsUpdate.outputs.pass || false }}
         id: scriptsArray
         run: |
           while read scriptName; do echo -n "\"$scriptName\", " >> l.txt; done < o.txt
           echo "array=[$(cat l.txt | rev | cut -c3- | rev)]" >> "$GITHUB_OUTPUT"
           cat "$GITHUB_OUTPUT"
-          echo '${{ steps.scriptsUpdate.outputs.pass || false }}'
-          echo '${{ steps.scriptsUpdate.outputs.pass }}'
-          echo '${{ steps.scriptsUpdate.outputs.pass || false != false }}'
 
   upload-and-clear-cache:
     if: ${{ needs.build.outputs.isUploadNeeded != false }}
     needs: [build]
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        scriptName: ${{ fromJson(needs.build.outputs.scriptsToUpload) }}
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        scriptName: ${{ fromJson(needs.build.outputs.scriptsToUpload) }}
     env:
       BUCKET_NAME: ${{ github.ref == 'refs/heads/main' && 'bucket-prod' || 'bucket-staging' }}
       NODE_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
@@ -85,6 +83,9 @@ jobs:
         id: dynamicVariables
         run: |
           echo "if ${{ needs.build.outputs.isUploadNeeded != false }}"
+          echo "isUploadNeeded ${{ needs.build.outputs.isUploadNeeded }}"
+          echo "isUploadNeeded2 ${{ needs.build.outputs.isUploadNeeded || false }}"
+          echo "${{ toJson(needs) }}"
           echo "EXAMPLE_URL_WITH_SUFFIX=EXAMPLE_URL_${{ matrix.scriptName }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
           echo "EXAMPLE_URL_FROM_VARS=EXAMPLE_URL_${{ matrix.scriptName }}_${{ github.ref_name }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
           echo "FASTLY_SERVICE_ID_WITH_SUFFIX=FASTLY_SERVICE_ID_${{ matrix.scriptName }}_${{ github.ref_name }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
