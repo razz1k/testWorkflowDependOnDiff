@@ -19,7 +19,7 @@ jobs:
       AUTHOR_NAME: 'github-actions[bot]'
     outputs:
       scriptsToUpload: ${{ steps.scriptsArray.outputs.array }}
-      isUploadNeeded: ${{ steps.diffChecker.outputs.pass && steps.scriptsUpdate.outputs.pass }}
+      isUploadNeeded: ${{ steps.diffChecker.outputs.pass == true && steps.scriptsUpdate.outputs.pass == true }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
