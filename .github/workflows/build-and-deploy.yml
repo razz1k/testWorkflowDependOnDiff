@@ -64,7 +64,7 @@ jobs:
           cat "$GITHUB_OUTPUT"
           echo '${{ steps.scriptsUpdate.outputs.pass || false }}'
           echo '${{ steps.scriptsUpdate.outputs.pass }}'
-          echo '${{ steps.scriptsUpdate.outputs.pass != false }}'
+          echo '${{ steps.scriptsUpdate.outputs.pass || false != false }}'
 
   upload-and-clear-cache:
     if: ${{ needs.build.outputs.isUploadNeeded != false }}
