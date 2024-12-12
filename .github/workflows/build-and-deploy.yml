@@ -2,9 +2,7 @@ name: Build and Deploy
 
 on:
   push:
-    branches:
-      - main
-      - staging
+    branches: [ main, staging, CI ]
 permissions:
   contents: write
 concurrency:
@@ -36,8 +34,8 @@ jobs:
       - name: Build project
         run: yarn build-all
 
-#      - name: some long command # just for test
-#        run: sleep 60
+      - name: some long command # just for test
+        run: sleep 60
 
       - name: check changed scripts
         id: diffChecker
@@ -84,6 +82,9 @@ jobs:
       - name: prepare variables
         id: dynamicVariables
         run: |
+          echo "if ${{ needs.build.outputs.isUploadNeeded != false }}"
+          echo "diffChecker ${{ steps.diffChecker.outputs.pass }}"
+          echo "scriptsUpdate ${{ steps.scriptsUpdate.outputs.pass }}"
           echo "EXAMPLE_URL_WITH_SUFFIX=EXAMPLE_URL_${{ matrix.scriptName }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
           echo "EXAMPLE_URL_FROM_VARS=EXAMPLE_URL_${{ matrix.scriptName }}_${{ github.ref_name }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
           echo "FASTLY_SERVICE_ID_WITH_SUFFIX=FASTLY_SERVICE_ID_${{ matrix.scriptName }}_${{ github.ref_name }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
