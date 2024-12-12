@@ -71,7 +71,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scriptName: ${{ needs.build.outputs.scriptsToUpload || test }}
+        scriptName: ${{ fromJson(needs.build.outputs.scriptsToUpload) || test }}
     env:
       BUCKET_NAME: ${{ github.ref == 'refs/heads/main' && 'bucket-prod' || 'bucket-staging' }}
       NODE_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
