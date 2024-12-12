@@ -19,7 +19,7 @@ jobs:
       AUTHOR_NAME: 'github-actions[bot]'
     outputs:
       scriptsToUpload: ${{ steps.scriptsArray.outputs.array }}
-      isUploadNeeded: ${{ steps.diffChecker.outputs.pass }}
+      isUploadNeeded: ${{ steps.diffChecker.outputs.pass && steps.scriptsUpdate.outputs.pass }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -48,11 +48,12 @@ jobs:
 
       - name: commit and push new scripts
         if: ${{ steps.diffChecker.outputs.pass || false }}
+        id: scriptsUpdate
         run: |
-          git config pull.rebase false
           git config --local user.email "${AUTHOR_EMAIL}"
           git config --local user.name "${AUTHOR_NAME}"
-          git pull && git add ./currVersion && git commit -m "fresh scripts [skip ci]" && git push
+          git add ./currVersion && git commit -m "fresh scripts [skip ci]"
+          git push || echo "pass=true" >> "$GITHUB_OUTPUT"
 
       - name: prepare data for matrix
         if: ${{ steps.diffChecker.outputs.pass || false }}
