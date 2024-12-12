@@ -34,8 +34,8 @@ jobs:
       - name: Build project
         run: yarn build-all
 
-#      - name: some long command # just for test
-#        run: sleep 60
+      - name: some long command # just for test
+        run: sleep 60
 
       - name: check changed scripts
         id: diffChecker
@@ -64,13 +64,13 @@ jobs:
           echo "array=[$(cat l.txt | rev | cut -c3- | rev)]" >> "$GITHUB_OUTPUT"
 
   upload-and-clear-cache:
-    if: ${{ needs.build.outputs.isUploadNeeded != false }}
+    if: echo "${{ contains(toJson(needs.build.outputs.isUploadNeeded), 'true') }}"
     needs: [build]
     runs-on: ubuntu-latest
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        scriptName: ${{ fromJson(needs.build.outputs.scriptsToUpload) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        scriptName: ${{ fromJson(needs.build.outputs.scriptsToUpload) }}
     env:
       BUCKET_NAME: ${{ github.ref == 'refs/heads/main' && 'bucket-prod' || 'bucket-staging' }}
       NODE_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
@@ -81,10 +81,6 @@ jobs:
       - name: prepare variables
         id: dynamicVariables
         run: |
-          echo "if ${{ toJson(needs.build.outputs.isUploadNeeded) != toJson(false) }}"
-          echo "isUploadNeeded ${{ needs.build.outputs.isUploadNeeded }}"
-          echo "isUploadNeeded2 ${{ needs.build.outputs.isUploadNeeded || false }}"
-          echo "${{ contains(toJson(needs.build.outputs.isUploadNeeded), 'true') }}"
           echo "EXAMPLE_URL_WITH_SUFFIX=EXAMPLE_URL_${{ matrix.scriptName }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
           echo "EXAMPLE_URL_FROM_VARS=EXAMPLE_URL_${{ matrix.scriptName }}_${{ github.ref_name }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
           echo "FASTLY_SERVICE_ID_WITH_SUFFIX=FASTLY_SERVICE_ID_${{ matrix.scriptName }}_${{ github.ref_name }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
