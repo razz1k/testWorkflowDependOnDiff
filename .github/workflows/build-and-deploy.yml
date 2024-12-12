@@ -17,7 +17,7 @@ jobs:
       AUTHOR_NAME: 'github-actions[bot]'
     outputs:
       scriptsToUpload: ${{ steps.scriptsArray.outputs.array }}
-      isUploadNeeded: ${{ steps.diffChecker.outputs.pass == true && steps.scriptsUpdate.outputs.pass == true }}
+      isUploadNeeded: ${{ steps.scriptsUpdate.outputs.pass || false }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -57,7 +57,7 @@ jobs:
           git push && echo "pass=true" >> "$GITHUB_OUTPUT" || echo "pass=false" >> "$GITHUB_OUTPUT"
 
       - name: prepare data for matrix
-        if: ${{ steps.diffChecker.outputs.pass || false }}
+        if: ${{ steps.scriptsUpdate.outputs.pass || false }}
         id: scriptsArray
         run: |
           while read scriptName; do echo -n "\"$scriptName\", " >> l.txt; done < o.txt
