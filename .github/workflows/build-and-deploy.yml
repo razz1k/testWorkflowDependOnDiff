@@ -123,6 +123,8 @@ jobs:
         run: |
           git config --local user.email "${AUTHOR_EMAIL}"
           git config --local user.name "${AUTHOR_NAME}"
-          git rev-parse --verify HEAD > ./.github/lastSuccessDeploy
+          lastSuccessDeploy=`git rev-parse --verify HEAD`
+          git reset --hard origin/$(git rev-parse --abbrev-ref HEAD) && git pull origin ${{ github.ref_name }}
+          echo "$lastSuccessDeploy" > ./.github/lastSuccessDeploy 
           git add ./.github/lastSuccessDeploy && git commit -m "fresh hash [skip ci]"
           git push
