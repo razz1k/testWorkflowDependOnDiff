@@ -16,6 +16,11 @@ jobs:
       scriptsToUpload: ${{ steps.scriptsArray.outputs.array }}
       isUploadNeeded: ${{ steps.diffChecker.outputs.pass || false }}
     steps:
+      - name: update git
+        run: |
+          sudo apt update
+          sudo apt install --only-upgrade git
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -26,8 +31,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          git --version
-          exit 1
           yarn install --production=false
 
       - name: prepare list of includes
