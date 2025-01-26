@@ -45,6 +45,7 @@ jobs:
             need_to_deploy="false"
 
             while read line; do
+              echo "$line"
               git diff --exit-code --quiet "$lastSuccessDeploy" HEAD -- "$line" || need_to_deploy="true" 
             done < "$filename"
           
