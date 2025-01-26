@@ -20,6 +20,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install --only-upgrade git
+          git log
 
       - name: Checkout
         uses: actions/checkout@v4
