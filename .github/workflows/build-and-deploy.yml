@@ -93,7 +93,7 @@ jobs:
           echo '${{ env[format('{0}', steps.dynamicVariables.outputs.EXAMPLE_URL_WITH_SUFFIX)] }}'
           echo '${{ steps.dynamicVariables.outputs.EXAMPLE_URL_FROM_VARS }}'
           echo '${{ vars[format('{0}', steps.dynamicVariables.outputs.EXAMPLE_URL_FROM_VARS)] }}'
-          ls -la ./'*'
+          ls -la
 
       - name: skip step if variable doesn't exist
         if: ${{ vars[format('{0}', steps.dynamicVariables.outputs.EXAMPLE_URL_FROM_VARS)] || false }}
