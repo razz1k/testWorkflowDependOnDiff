@@ -16,11 +16,6 @@ jobs:
       scriptsToUpload: ${{ steps.scriptsArray.outputs.array }}
       isUploadNeeded: ${{ steps.diffChecker.outputs.pass || false }}
     steps:
-      - name: update git
-        run: |
-          sudo apt update
-          sudo apt install --only-upgrade git
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -115,6 +110,7 @@ jobs:
 
   save-last-deployed-commit-hash:
     needs: [upload-and-clear-cache]
+    if: ${{ !canceled() }}
     runs-on: ubuntu-latest
     env:
       AUTHOR_EMAIL: 'github-actions[bot]@users.noreply.github.com'
