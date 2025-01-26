@@ -37,11 +37,12 @@ jobs:
       - name: prepare list for deploy
         id: diffChecker
         run: |
+          lastSuccessDeploy=`cat ./.github/lastSuccessDeploy`
           for filename in ./src/*.js_tmp; do
             need_to_deploy="false"
 
             while read line; do
-              git diff --exit-code --quiet HEAD~1 HEAD -- "$line" || need_to_deploy="true" 
+              git diff --exit-code --quiet "$lastSuccessDeploy" HEAD -- "$line" || need_to_deploy="true" 
             done < "$filename"
           
             [[ "$need_to_deploy" == "true" ]] && echo "${filename:6:-7}" >> o.txt # ./src/entry-1.js_tmp -> entry-1
@@ -104,3 +105,18 @@ jobs:
         if: ${{ vars[format('{0}', steps.dynamicVariables.outputs.EXAMPLE_URL_FROM_VARS)] || false }}
         run: |
           echo "hi"
+
+  save-last-deployed-commit-hash:
+    needs: [upload-and-clear-cache]
+    runs-on: ubuntu-latest
+    env:
+      AUTHOR_EMAIL: 'github-actions[bot]@users.noreply.github.com'
+      AUTHOR_NAME: 'github-actions[bot]'
+    steps:
+      - name: commit and push new commit hash
+        run: |
+          git config --local user.email "${AUTHOR_EMAIL}"
+          git config --local user.name "${AUTHOR_NAME}"
+          git rev-parse --verify HEAD > ./.github/lastSuccessDeploy
+          git add ./.github/lastSuccessDeploy && git commit -m "fresh hash [skip ci]"
+          git push
