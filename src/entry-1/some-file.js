@@ -1,1 +1,1 @@
-export default { hello: 'world1' };
+export default { hello: 'world' };
