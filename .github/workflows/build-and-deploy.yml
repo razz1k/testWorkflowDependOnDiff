@@ -57,7 +57,7 @@ jobs:
 
   upload-and-clear-cache:
     if: ${{ contains(toJson(needs.build.outputs.isUploadNeeded), 'true') }}
-    needs: [build]
+    needs: [prepare]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
