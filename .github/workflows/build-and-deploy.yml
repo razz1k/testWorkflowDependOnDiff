@@ -28,6 +28,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          git pull origin ${{ github.ref_name }}
           yarn install --production=false
 
       - name: prepare list of includes
