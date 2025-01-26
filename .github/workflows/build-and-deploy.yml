@@ -37,7 +37,7 @@ jobs:
       - name: prepare list for deploy
         id: diffChecker
         run: |
-          lastSuccessDeploy=`cat ./.github/lastSuccessDeploy`
+          lastSuccessDeploy=`head -n1 ./.github/lastSuccessDeploy`
           for filename in ./src/*.js_tmp; do
             need_to_deploy="false"
 
@@ -47,7 +47,7 @@ jobs:
           
             [[ "$need_to_deploy" == "true" ]] && echo "${filename:6:-7}" >> o.txt # ./src/entry-1.js_tmp -> entry-1
           done
-          [ ! -s o.txt ] && cat o.txt && echo "no changes found" || echo "pass=true" >> "$GITHUB_OUTPUT"
+          [ ! -s o.txt ] && echo "no changes found" || echo "pass=true" >> "$GITHUB_OUTPUT"
 
       - name: prepare data for matrix
         if: ${{ steps.diffChecker.outputs.pass || false }}
@@ -99,7 +99,6 @@ jobs:
           echo '${{ env[format('{0}', steps.dynamicVariables.outputs.EXAMPLE_URL_WITH_SUFFIX)] }}'
           echo '${{ steps.dynamicVariables.outputs.EXAMPLE_URL_FROM_VARS }}'
           echo '${{ vars[format('{0}', steps.dynamicVariables.outputs.EXAMPLE_URL_FROM_VARS)] }}'
-          ls -la
 
       - name: skip step if variable doesn't exist # this step just for test
         if: ${{ vars[format('{0}', steps.dynamicVariables.outputs.EXAMPLE_URL_FROM_VARS)] || false }}
