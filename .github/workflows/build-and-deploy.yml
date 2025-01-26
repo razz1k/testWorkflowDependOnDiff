@@ -47,7 +47,7 @@ jobs:
           
             [[ "$need_to_deploy" == "true" ]] && echo "${filename:6:-7}" >> o.txt # ./src/entry-1.js_tmp -> entry-1
           done
-          [ ! -s o.txt ] && echo "no changes found" || echo "pass=true" >> "$GITHUB_OUTPUT"
+          [ ! -s o.txt ] && cat o.txt && echo "no changes found" || echo "pass=true" >> "$GITHUB_OUTPUT"
 
       - name: prepare data for matrix
         if: ${{ steps.diffChecker.outputs.pass || false }}
