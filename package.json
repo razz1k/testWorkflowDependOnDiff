@@ -12,6 +12,7 @@
     "build-all": "for filename in ./src/entry-*.js; do INPUT_FILE=\"$filename\" rollup -c; done"
   },
   "devDependencies": {
-    "rollup": "^4.28.1"
+    "rollup": "^4.28.1",
+    "dependency-tree": "^11.0.1"
   }
 }

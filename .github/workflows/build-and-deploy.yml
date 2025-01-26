@@ -2,7 +2,7 @@ name: Build and Deploy
 
 on:
   push:
-    branches: [ main, staging ]
+    branches: [ main, staging, new-CI ]
 permissions:
   contents: write
 concurrency:
@@ -10,54 +10,46 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  prepare:
     runs-on: ubuntu-latest
-    env:
-      AUTHOR_EMAIL: 'github-actions[bot]@users.noreply.github.com'
-      AUTHOR_NAME: 'github-actions[bot]'
     outputs:
       scriptsToUpload: ${{ steps.scriptsArray.outputs.array }}
-      isUploadNeeded: ${{ steps.scriptsUpdate.outputs.pass || false }}
+      isUploadNeeded: ${{ steps.diffChecker.outputs.pass || false }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
-          node-version: 'lts/*'
-          check-latest: true
+          node-version: '22'
 
       - name: Install dependencies
         run: yarn install --production=false
 
-      - name: Build project
-        run: yarn build-all
+      - name: prepare list of includes
+        run: |
+          for filename in ./src/*.js; do
+            INPUT_FILE="$filename" node ./getDependency.cjs
+          done
+          sed -i 's/,/\n/g' ./src/*.js_tmp
 
-      - name: some long command # just for test
-        run: sleep 60
-
-      - name: check changed scripts
+      - name: prepare list for deploy
         id: diffChecker
         run: |
-          mkdir -p ./currVersion
-          find ./dist -iname "entry-*.js" -execdir bash -c "git diff --exit-code --quiet --no-index  '{}' '../currVersion/{}' || basename -s .js \"{}\"" \; > o.txt
-          cat o.txt
-          [ ! -s o.txt ] && echo "no changes found" || echo "pass=true" >> "$GITHUB_OUTPUT"
-          
+          for filename in ./src/*.js_tmp; do
+            need_to_deploy="false"
 
-      - name: commit and push new scripts
-        if: ${{ steps.diffChecker.outputs.pass || false }}
-        id: scriptsUpdate
-        run: |
-          git config --local user.email "${AUTHOR_EMAIL}"
-          git config --local user.name "${AUTHOR_NAME}"
-          cp ./dist/entry-*.js ./currVersion/
-          git add ./currVersion && git commit -m "fresh scripts [skip ci]"
-          git push && echo "pass=true" >> "$GITHUB_OUTPUT" || echo "pass=false" >> "$GITHUB_OUTPUT"
+            while read line; do
+              git diff --exit-code --quiet HEAD~1 HEAD -- "$line" || need_to_deploy="true" 
+            done < "$filename"
+          
+            [[ "$need_to_deploy" == "true" ]] && echo "${filename:6:-7}" >> o.txt # ./src/entry-1.js_tmp -> entry-1
+          done
+          [ ! -s o.txt ] && echo "no changes found" || echo "pass=true" >> "$GITHUB_OUTPUT"
 
       - name: prepare data for matrix
-        if: ${{ contains(toJson(steps.scriptsUpdate.outputs.pass), 'true') }}
+        if: ${{ steps.diffChecker.outputs.pass || false }}
         id: scriptsArray
         run: |
           while read scriptName; do echo -n "\"$scriptName\", " >> l.txt; done < o.txt
@@ -74,8 +66,6 @@ jobs:
     env:
       BUCKET_NAME: ${{ github.ref == 'refs/heads/main' && 'bucket-prod' || 'bucket-staging' }}
       NODE_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
-      EXAMPLE_URL_ENTRY_1: ${{ github.ref == 'refs/heads/main' && 'https://some.url-1.to.prod' || 'https://some.url-1.to.staging' }}
-      EXAMPLE_URL_ENTRY_2: ${{ github.ref == 'refs/heads/main' && 'https://some.url-2.to.prod' || 'https://some.url-2.to.staging' }}
     name: processing ${{ matrix.scriptName || 'skipped' }}
     steps:
       - name: prepare variables
@@ -84,6 +74,21 @@ jobs:
           echo "EXAMPLE_URL_WITH_SUFFIX=EXAMPLE_URL_${{ matrix.scriptName }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
           echo "EXAMPLE_URL_FROM_VARS=EXAMPLE_URL_${{ matrix.scriptName }}_${{ github.ref_name }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
           echo "FASTLY_SERVICE_ID_WITH_SUFFIX=FASTLY_SERVICE_ID_${{ matrix.scriptName }}_${{ github.ref_name }}" | tr '-' '_' | tr '[:lower:]' '[:upper:]' >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: yarn install --production=false
+
+      - name: build module
+        run: |
+          INPUT_FILE="./src/${{ matrix.scriptName }}.js" yarn build
 
       - name: check variables # this step just for test
         run: |
@@ -95,36 +100,7 @@ jobs:
           echo '${{ vars[format('{0}', steps.dynamicVariables.outputs.EXAMPLE_URL_FROM_VARS)] }}'
           ls -la
 
-      - name: skip step if variable doesn't exist
+      - name: skip step if variable doesn't exist # this step just for test
         if: ${{ vars[format('{0}', steps.dynamicVariables.outputs.EXAMPLE_URL_FROM_VARS)] || false }}
         run: |
           echo "hi"
-
-      # ---- commented cause it's just example of workflow, but code should work if uncoment it
-      # - name: Authenticate to Google Cloud
-      #   uses: google-github-actions/auth@v1
-      #   with:
-      #     credentials_json: ${{ secrets.GC_KEY }}
-
-      # - name: Upload script to the bucket
-      #   run: |
-      #     gcloud storage cp currVersion/${{ matrix.scriptName }} gs://${{ env.BUCKET_NAME }}/some_dir/${{ matrix.scriptName }}
-
-      # - name: Purge Cache on Fastly
-      #   if: success()
-      #   run: |
-      #     curl -X POST "https://api.fastly.com/service/${{ secrets[format('{0}', steps.dynamicVariables.outputs.FASTLY_SERVICE_ID_WITH_SUFFIX)] }}/purge/purge_all" \
-      #     -H "Fastly-Key: ${{ env.FASTLY_API_KEY }}" \
-      #     -H "Accept: application/json"
-
-      # - name: Notify
-      #   if: always()
-      #   uses: slack-notification-action@main
-      #   with:
-      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
-      #     SLACK_FAILURE_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
-      #     TITLE_SUCCESS: ""
-      #     TITLE_FAIL: ""
-      #     BODY_SUCCESS: "Deployment completed [${{ env.NODE_ENV }}]. You can check ${{ env[format('{0}', steps.dynamicVariables.outputs.EXAMPLE_URL_WITH_SUFFIX)] }}"
-      #     BODY_FAIL: "Deployment failed. Check <https://github.com/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ github.repository }}>"
-
