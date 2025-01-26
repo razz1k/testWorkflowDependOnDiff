@@ -20,7 +20,6 @@ jobs:
         run: |
           sudo apt update
           sudo apt install --only-upgrade git
-          git log
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,6 +31,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          git log
           yarn install --production=false
 
       - name: prepare list of includes
