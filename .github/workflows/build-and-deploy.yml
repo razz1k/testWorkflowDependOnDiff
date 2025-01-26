@@ -23,6 +23,8 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: -1
 
       - name: Setup Node
         uses: actions/setup-node@v2
@@ -31,7 +33,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          git log
           yarn install --production=false
 
       - name: prepare list of includes
