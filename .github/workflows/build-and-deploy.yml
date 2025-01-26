@@ -113,6 +113,9 @@ jobs:
       AUTHOR_EMAIL: 'github-actions[bot]@users.noreply.github.com'
       AUTHOR_NAME: 'github-actions[bot]'
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: commit and push new commit hash
         run: |
           git config --local user.email "${AUTHOR_EMAIL}"
