@@ -56,13 +56,13 @@ jobs:
           echo "array=[$(cat l.txt | rev | cut -c3- | rev)]" >> "$GITHUB_OUTPUT"
 
   upload-and-clear-cache:
-    if: ${{ contains(toJson(needs.build.outputs.isUploadNeeded), 'true') }}
+    if: ${{ contains(toJson(needs.prepare.outputs.isUploadNeeded), 'true') }}
     needs: [prepare]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        scriptName: ${{ fromJson(needs.build.outputs.scriptsToUpload) }}
+        scriptName: ${{ fromJson(needs.prepare.outputs.scriptsToUpload) }}
     env:
       BUCKET_NAME: ${{ github.ref == 'refs/heads/main' && 'bucket-prod' || 'bucket-staging' }}
       NODE_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
