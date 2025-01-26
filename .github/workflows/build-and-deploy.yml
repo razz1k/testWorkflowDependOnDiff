@@ -36,6 +36,7 @@ jobs:
             INPUT_FILE="$filename" node ./getDependency.cjs
           done
           sed -i 's/,/\n/g' ./src/*.js_tmp
+          sed -i -e '$aTEXTTOEND' ./src/*.js_tmp
 
       - name: prepare list for deploy
         id: diffChecker
@@ -45,8 +46,7 @@ jobs:
             need_to_deploy="false"
 
             while read line; do
-              echo "$line"
-              git diff --exit-code --quiet "$lastSuccessDeploy" HEAD -- "$line" || need_to_deploy="true" 
+              git diff --exit-code --quiet "$lastSuccessDeploy" HEAD -- "$line" || need_to_deploy="true"
             done < "$filename"
           
             [[ "$need_to_deploy" == "true" ]] && echo "${filename:6:-7}" >> o.txt # ./src/entry-1.js_tmp -> entry-1
