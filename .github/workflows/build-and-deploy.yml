@@ -110,7 +110,6 @@ jobs:
 
   save-last-deployed-commit-hash:
     needs: [upload-and-clear-cache]
-    if: ${{ !canceled() }}
     runs-on: ubuntu-latest
     env:
       AUTHOR_EMAIL: 'github-actions[bot]@users.noreply.github.com'
