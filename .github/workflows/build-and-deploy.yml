@@ -25,7 +25,10 @@ jobs:
           node-version: '22'
 
       - name: Install dependencies
-        run: yarn install --production=false
+        run: |
+          git --version
+          exit 1
+          yarn install --production=false
 
       - name: prepare list of includes
         run: |
